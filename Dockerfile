@@ -1,98 +1,158 @@
-FROM debian:buster
+FROM debian:buster AS stage_build
 
-ARG user
-ARG group
-
-ARG EMSCRIPTEN_VERSION=1.39.15
-ARG EMSDK_CHANGESET=master
-
+ARG EMSCRIPTEN_VERSION=1.39.18
 ENV EMSDK /emsdk
-ENV EM_DATA ${EMSDK}/.data
-ENV EM_CONFIG ${EMSDK}/.emscripten
-ENV EM_CACHE ${EM_DATA}/cache
-ENV EM_PORTS ${EM_DATA}/ports
-ENV EMCC_SKIP_SANITY_CHECK 1
 
-# Install development tools.
-RUN set -e -x ;\
-    apt-get update && \
-    apt-get install -y \
-        libxml2 \
-        wget \
-        git-core \
-        ca-certificates \
-        build-essential \
-        file \
-        python python-pip \
-        python3 python3-pip \
-        cmake \
-        libunwind-dev \
-        golang \
-        && \
-    apt-get clean && \
-    pip2 install jinja2 && \
-    echo ". /etc/bash_completion" >> /root/.bashrc
+# ------------------------------------------------------------------------------
 
-# Get EMSDK.
-RUN set -e -x ;\
-    git clone https://github.com/emscripten-core/emsdk.git ${EMSDK} && \
-    cd ${EMSDK} && git reset --hard ${EMSDK_CHANGESET} && \
-    ./emsdk.py update-tags
+RUN echo "## Start building" \
+    \
+&&	echo "## Update and install packages" \
+    &&	apt-get -qq -y update \
+    &&  apt-get -qq install -y --no-install-recommends \
+            libxml2 \
+            wget \
+            git-core \
+            ca-certificates \
+            build-essential \
+            file \
+            python2 python-pip \
+&&  echo "## Done"
 
-# Install Emscripten.
-RUN set -e -x ;\
-    cd ${EMSDK} && \
-    ./emsdk install ${EMSCRIPTEN_VERSION}
+RUN  echo "## Get EMSDK" \
+    &&  git clone https://github.com/emscripten-core/emsdk.git ${EMSDK} \
+&&  echo "## Done"
+
+RUN  echo "## Install Emscripten" \
+    &&  cd ${EMSDK} \
+    &&  ./emsdk install ${EMSCRIPTEN_VERSION} \
+&&  echo "## Done"
 
 # This generates configuration that contains all valid paths according to installed SDK
-RUN set -e -x ;\
-    cd ${EMSDK} && \
-    echo "## Generate standard configuration" && \
+RUN cd ${EMSDK} \
+    &&  echo "## Generate standard configuration" \
+    &&  ./emsdk activate ${EMSCRIPTEN_VERSION} \
+    &&  chmod -R 777 ${EMSDK}/upstream/emscripten/cache \
+&&  echo "## Done"
+
+# Clean up emscripten installation and strip some symbols
+RUN echo "## Aggresive optimization: Remove debug symbols" \
+&&  apt-get -qq -y update && apt-get -qq install -y --no-install-recommends \
+        binutils \
+    && cd ${EMSDK} && . ./emsdk_env.sh \
+    # Remove debugging symbols from embedded node (extra 7MB)
+    && strip -s `which node` \
+    # Tests consume ~80MB disc space
+    && rm -fr ${EMSDK}/upstream/emscripten/tests \
+    # Fastcomp is not supported
+    && rm -fr ${EMSDK}/upstream/fastcomp \
+    # strip out symbols from clang (~extra 50MB disc space)
+    && find ${EMSDK}/upstream/bin -type f -exec strip -s {} + || true \
+&&  echo "## Done"
+
+# Generate sanity
+# TODO(sbc): We should be able to use just emcc -v here but it doesn't
+# currently create the sanity file.
+RUN echo "## Generate sanity" \
+   &&  cd ${EMSDK} && . ./emsdk_env.sh \
+   &&  echo "int main() { return 0; }" > hello.c \
+   &&  emcc -c hello.c \
+   &&  cat ${EMSDK}/.emscripten_sanity \
+&&  echo "## Done"
+
+# ------------------------------------------------------------------------------
+# -------------------------------- STAGE DEPLOY --------------------------------
+# ------------------------------------------------------------------------------
+
+FROM debian:buster-slim AS stage_deploy
+
+COPY --from=stage_build /emsdk /emsdk
+
+# Fallback in case Emscripten isn't activated.
+# This will let use tools offered by this image inside other Docker images
+# (sub-stages) or with custom / no entrypoint
+ENV EMSDK_NODE=/emsdk/node/12.18.1_64bit/bin/node
+ENV EMSDK=/emsdk
+ENV EM_CONFIG=/emsdk/.emscripten
+ENV PATH="${EMSDK}:${EMSDK}/upstream/emscripten:${EMSDK}/upstream/bin:emsdk/node/12.18.1_64bit/bin:${PATH}"
+
+# ------------------------------------------------------------------------------
+# Create a 'standard` 1000:1000 user
+# Thanks to that this image can be executed as non-root user and created files
+# will not require root access level on host machine Please note that this
+# solution even if widely spread (i.e. Node.js uses it) is far from perfect as
+# user 1000:1000 might not exist on host machine, and in this case running any
+# docker image will cause other random problems (mostly due `$HOME` pointing to
+# `/`)
+RUN echo "## Create emscripten user (1000:1000)" \
+    &&  groupadd --gid 1000 emscripten \
+    &&  useradd --uid 1000 --gid emscripten --shell /bin/bash --create-home emscripten \
+    &&  echo "umask 0000" >> /etc/bash.bashrc \
+    &&  echo ". /emsdk/emsdk_env.sh" >> /etc/bash.bashrc \
+&&  echo "## Done"
+
+# ------------------------------------------------------------------------------
+
+RUN echo "## Update and install packages" \
+# mitigate problem with create symlink to man for base debian image
+    &&  mkdir -p /usr/share/man/man1/ \
     \
-    ./emsdk activate ${EMSCRIPTEN_VERSION} --embedded && \
-    ./emsdk construct_env > /dev/null && \
-    cat ${EMSDK}/emsdk_set_env.sh && \
+    &&  apt-get -qq -y update && apt-get -qq install -y --no-install-recommends \
+        libxml2 \
+        ca-certificates \
+        python2 \
+        python-pip \
+        wget \
+        curl \
+        zip \
+        unzip \
+        git \
+        ssh-client \
+        build-essential \
+        make \
+        ant \
+        libidn11 \
+        cmake \
+        golang \
+        python-setuptools \
+        python-dev \
+        python-wheel \
+        openjdk-11-jre-headless \
     \
-    # remove wrongly created entry with EM_CACHE, variable will be picked up from ENV
-    sed -i -e "/EM_CACHE/d" ${EMSDK}/emsdk_set_env.sh && \
-    # add a link to tools like asm2wasm in a system path
-    # asm2wasm (and friends might be places either in ./upstream of ./fastcomp folder, hence detection is needed)
-    printf "export PATH=$(dirname $(find . -name asm2wasm -exec readlink -f {} +)):\$PATH\n" >> ${EMSDK}/emsdk_set_env.sh
+    # Standard Cleanup on Debian images
+    &&  apt-get -y clean \
+    &&  apt-get -y autoclean \
+    &&  apt-get -y autoremove \
+    &&  rm -rf /var/lib/apt/lists/* \
+    &&  rm -rf /var/cache/debconf/*-old \
+    &&  rm -rf /usr/share/doc/* \
+    &&  rm -rf /usr/share/man/?? \
+    &&  rm -rf /usr/share/man/??_* \
+&&  echo "## Done"
 
-# Create a structure and make mutable folders accessible for r/w
-RUN set -e -x ;\
-    cd ${EMSDK} && \
-    echo "## Create .data structure" && \
-    for mutable_dir in ${EM_DATA} ${EM_PORTS} ${EM_CACHE} ${EMSDK}/zips ${EMSDK}/tmp; do \
-      mkdir -p ${mutable_dir}; \
-      chmod -R 777 ${mutable_dir}; \
-    done
+RUN pip install jinja2
 
-# Create symbolic links for critical Emscripten Tools
-# This is important for letting people using Emscripten in Dockerfiles without activation
-# As each Emscripten release is placed to a different folder (i.e. /emsdk/emscripten/tag-1.38.31)
-RUN set -e -x ;\
-    . ${EMSDK}/emsdk_set_env.sh && \
-    \
-    mkdir -p ${EMSDK}/llvm ${EMSDK}/emscripten ${EMSDK}/binaryen && \
-    \
-    ln -s $(dirname $(which node))/..       ${EMSDK}/node/current && \
-    ln -s $(dirname $(which clang))/..      ${EMSDK}/llvm/clang && \
-    ln -s $(dirname $(which emcc))          ${EMSDK}/emscripten/sdk && \
-    \
-    ln -s $(dirname $(which asm2wasm))      ${EMSDK}/binaryen/bin
+# ------------------------------------------------------------------------------
+# Internal test suite of tools that this image provides
+#COPY test_dockerimage.sh /emsdk/
 
-# Expose Major tools to system PATH, so that emcc, node, asm2wasm etc can be used without activation
-ENV PATH="${EMSDK}:${EMSDK}/emscripten/sdk:${EMSDK}/llvm/clang/bin:${EMSDK}/node/current/bin:${EMSDK}/binaryen/bin:${PATH}"
+#RUN echo "## Internal Testing of image" \
+#    &&  /emsdk/test_dockerimage.sh  \
+#&&  echo "## Done"
 
-RUN groupadd -g $group builder \
-    && useradd -u $user -g $group builder \
-    && mkdir -p /home/builder \
-    && chown -R builder:builder /home/builder
+# ------------------------------------------------------------------------------
+# Copy this Dockerimage into image, so that it will be possible to recreate it later
+COPY Dockerfile /emsdk/dockerfiles/emscripten-core/emsdk/
 
-USER builder
-WORKDIR /home/builder
+# ------------------------------------------------------------------------------
+# Use commonly used /src as working directory
+WORKDIR /src
 
-# Default command to run if not specified otherwise.
-CMD ["/bin/bash"]
+#LABEL maintainer="kontakt@trzeci.eu" \
+#      org.label-schema.name="emscripten" \
+#      org.label-schema.description="The official container with Emscripten SDK" \
+#      org.label-schema.url="https://emscripten.org" \
+#      org.label-schema.vcs-url="https://github.com/emscripten-core/emsdk" \
+#      org.label-schema.docker.dockerfile="/docker/Dockerfile"
 
+# ------------------------------------------------------------------------------
