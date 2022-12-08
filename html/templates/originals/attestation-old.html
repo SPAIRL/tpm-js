@@ -104,3 +104,105 @@
   <img src="images/remote_attestation.svg" class="img-responsive center-block" style="max-width:70%"
     alt="Remote Attestation">
 </p>
+
+<p>
+  <br> {{ macros.code_cell(input="
+  // Simulate measured boot.
+  app.Shutdown();
+  sim.PowerOff();
+  sim.PowerOn();
+  app.Startup();
+
+  var boot_log = [];
+  function MeasureElement(description, data, pcr) {
+    // Add digest to event log.
+    var md = forge.md.sha256.create();
+    md.update(data);
+    boot_log.push({description: description, pcr: pcr, digest: md.digest().bytes()});
+    // Extend PCR with digest.
+    var rc = app.ExtendPcr(/*pcr=*/pcr, data);
+    assert(rc == TPM2_RC_SUCCESS, 'ExtendPcr failed');
+  }
+
+  // CRTM measures the firmware and passes control to it.
+  MeasureElement('Firmware ver 1234', 'Firmware blob', 0);
+
+  // Firmware measures the boot loader and passes control to it.
+  MeasureElement('Boot loader /EFI/boot.efi', 'Boot loader blob', 1);
+
+  // Boot loader measures the OS kernel and passes control to it.
+  MeasureElement('Kernel file /boot/vmlinuz-linux', 'Kernel blob', 1);
+
+  // Create a restricted RSA signing key.
+  // Assume this key is trusted by the remote verifier.
+  var aik = app.CreatePrimary(TPM2_RH_OWNER, TPM2_ALG_RSA,/*restricted=*/1, /*decrypt=*/0, /*sign=*/1);
+  assert(aik.rc == TPM2_RC_SUCCESS, 'CreatePrimary failed');
+
+  // Remote attester generates a random nonce.
+  // The challenge is sent to the host.
+  var challenge = Math.random().toString(36);
+
+  // Sign PCR quote with random nonce.
+  var quote_result = app.Quote(aik.handle, /*nonce=*/ challenge);
+  assert(quote_result.rc == TPM2_RC_SUCCESS, 'Quote failed');
+
+  // Unload key.
+  assert(app.FlushContext(aik.handle) == TPM2_RC_SUCCESS, 'FlushContext failed');
+
+  // Build forge RSA public key.
+  var bn_n = new forge.jsbn.BigInteger(aik.rsa_public_n.substr(2), 16);
+  var bn_e = new forge.jsbn.BigInteger('10001', 16);
+  var pub = new forge.pki.setRsaPublicKey(bn_n, bn_e);
+
+  // Build forge signature blob.
+  assert(quote_result.sign_algo == TPM2_ALG_RSASSA, 'Unexpected sign algo');
+  assert(quote_result.hash_algo == TPM2_ALG_SHA256, 'Unexpected hash algo');
+  var signature = ByteArrayToForgeBuffer(quote_result.rsa_ssa_sig).data;
+
+  // Compute message digest.
+  var md = forge.md.sha256.create();
+  md.update(ByteArrayToForgeBuffer(quote_result.tpm2b_attest).data);
+
+  // Remote attester verifies signature.
+  assert(pub.verify(md.digest().bytes(), signature, 'RSASSA-PKCS1-V1_5') == true, 'Signature verification failed');
+
+  // Unmarshal the serialized TPMS_ATTEST buffer.
+  var attested = util.UnmarshalAttestBuffer(quote_result.tpm2b_attest);
+  assert(attested.rc == TPM2_RC_SUCCESS, 'Unmarshal failed');
+
+  // Extract the nonce from the tpm2b_attest buffer.
+  // It should match the random challenge that we sent. This proves the attested data is fresh.
+  var signed_nonce = ByteArrayToForgeBuffer(attested.nonce);
+  assert(_.isEqual(signed_nonce.data, challenge) == true, 'Nonce does not match challenge');
+
+  // Playback digests from boot_log.
+  var pcrs = [forge.util.hexToBytes('0000000000000000000000000000000000000000000000000000000000000000'),
+              forge.util.hexToBytes('0000000000000000000000000000000000000000000000000000000000000000'),
+              forge.util.hexToBytes('0000000000000000000000000000000000000000000000000000000000000000'),
+              forge.util.hexToBytes('0000000000000000000000000000000000000000000000000000000000000000')];
+  for (var i in boot_log) {
+    // PCR := Hash(PCR || M)
+    var extend = new forge.sha256.create();
+    extend.update(pcrs[boot_log[i].pcr]);
+    extend.update(boot_log[i].digest);
+    pcrs[boot_log[i].pcr] = extend.digest().bytes();
+  }
+
+  // app.Quote selects PCR0, PCR1, PCR2 and PCR3. Therefore, the expected quote
+  // is the digest of <PCR0, PCR1, PCR2, PCR3>.
+  var expected_pcrs = new forge.sha256.create();
+  expected_pcrs.update(pcrs[0]);
+  expected_pcrs.update(pcrs[1]);
+  expected_pcrs.update(pcrs[2]);
+  expected_pcrs.update(pcrs[3]);
+
+  // Extract selected PCRs digest from the tpm2b_attest buffer.
+  // It should match the expected digest computed above.
+  var signed_pcrs = ByteArrayToForgeBuffer(attested.selected_pcr_digest);
+  assert(_.isEqual(signed_pcrs.data, expected_pcrs.digest().data) == true, 'PCRs dont match');
+
+  // Boot log's integrity is verified. Its contents can be used for host integrity evaluation.
+
+  print('OK');
+  ") }}
+</p>
