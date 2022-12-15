@@ -23,7 +23,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
 
-  <title>TPM-JS</title>
+  <title>SPAIRL TPM</title>
   <link rel="icon" type="image/png" href="images/favicon.ico" />
 
 
@@ -69,42 +69,55 @@
 
 <body>
   <!-- Top navbar -->
-  <nav class="navbar navbar-inverse navbar-default navbar-fixed-top">
-    <div class="container">
-      <div class="navbar-header">
-        <a class="navbar-brand" href="index.html">TPM-JS</a>
-      </div>
+
+  <nav class="navbar navbar-inverse navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="index.html">SPAIRL TPM</a>
+
+    <ul class="nav navbar-nav navbar-right">
+        <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#simulatorCollapse" aria-expanded="true" aria-controls="simulatorCollapse"><span class="glyphicon glyphicon-log-in"></span> Launch/Hide Simulator</button>
+    </ul>
     </div>
-  </nav>
-
-  <div class="container-fluid">
+  </div>
+</nav>
+ <div class="container-fluid">
     <div class="row">
-      {% set pages = [
-        ("welcome.html", "Welcome", "pg_welcome"),
-        ("introduction.html", "Introduction", "pg_introduction"),
-        ("properties.html", "Properties", "pg_properties"),
-        ("random.html", "Random", "pg_random"),
-        ("keys.html", "Keys", "pg_keys"),
-        ("certificates.html", "Certificates", "pg_certificates"),
-        ("ownership.html", "Ownership", "pg_ownership"),
-        ("pcrs.html", "PCRs", "pg_pcrs"),
-        ("attestation.html", "Attestation", "pg_attestation"),
-        ("authorization.html", "Authorization", "pg_authorization"),
-        ("sealing.html", "Sealing", "pg_sealing"),
-        ("importing.html", "Importing", "pg_importing"),
-        ("glossary.html", "Glossary", "pg_glossary"),
-        ("reading.html", "Reading", "pg_reading"),
-        ] -%}
+        {% set pages = [
+          ("welcome.html", "Welcome", "pg_welcome"),
+          ("introduction.html", "Introduction", "pg_introduction"),
+          ("properties.html", "Properties", "pg_properties_lab"),
+          ("random.html", "Random", "pg_random_lab"),
+          ("keys.html", "Keys", "pg_keys"),
+          ("certificates.html", "Certificates", "pg_certificates"),
+          ("certificates-lab.html", "Certificates Lab", "pg_certificates_lab"),
+          ("ownership.html", "Ownership", "pg_ownership"),
+          ("ownership-lab.html", "Ownership Lab", "pg_ownership_lab"),
+          ("pcrs.html", "PCRs", "pg_pcrs"),
+          ("pcrs-lab.html", "PCRs Lab", "pg_pcrs_lab"),
+          ("attestation.html", "Attestation", "pg_attestation"),
+          ("attestation-lab.html","Attestation Lab","pg_attestation_lab"),
+          ("authorization.html", "Authorization", "pg_authorization"),
+          ("authorization-lab.html", "Authorization Lab", "pg_authorization_lab"),
+          ("sealing.html", "Sealing", "pg_sealing"),
+          ("sealing-lab.html", "Sealing Lab", "pg_sealing_lab"),
+          ("importing.html", "Importing", "pg_importing"),
+          ("importing-lab.html", "Importing Lab", "pg_importing_lab"),
+          ("glossary.html", "Glossary", "pg_glossary"),
+          ("reading.html", "Reading", "pg_reading"),
+          ] -%}
 
-      <!-- Sidebar -->
+       <!-- Sidebar -->
       <div class="col-md-1 sidebar">
-        <ul class="nav nav-sidebar">
+        <ul class="nav nav-sidebar" style="background-color: #2D2D2A;">
           {% for fname, title, id in pages %}
           <li id="side_{{id}}" {% if loop.first %} class="active" {% endif %}>
-            <a href="#{{id}}" data-value="{{id}}">{{ title|e }}</a>
+            <a href="#{{id}}" data-value="{{id}}" style="color: #F4F4F6;">{{ title|e }}</a>
           </li>
           {% endfor %}
       </div>
+
+
 
       <!-- Page -->
       <div class="col-md-6">
@@ -118,7 +131,7 @@
               {% if not loop.first %}
               <li><a href="#{{ pages[loop.index0-1][2] }}" data-value="{{ pages[loop.index0-1][2] }}">Previous</a></li>
               {% endif %} {% if not loop.last %}
-              <li><a href="#{{ pages[loop.index0+1][2] }}" data-value="{{ pages[loop.index0+1][2] }}">Next</a></li>
+              <li><a href="#{{ pages[loop.index0+1][2] }}" data-value="{{ pages[loop.index0+1][2] }}" type="button" data-toggle="collapse" data-target="#simulatorCollapse" aria-expanded="true" aria-controls="simulatorCollapse">Next</a></li>
               {% endif %}
             </ul>
           </nav>
@@ -126,16 +139,24 @@
         {% endfor %}
       </div>
 
+
       <!-- Simulator window -->
       <div class="col-md-5">
         <!-- affix sets position to fixed. width 40% is the column width (5) divided by the
              total number of row columns (12) -->
-        <div class="simulator_window affix" style="width: 40%">
+        
+        <div class="simulator_window affix panel-collapse collapse in" style="width: 40%" id="simulatorCollapse" >
+            
+        
           {% include "simulator_window.html" %}
-        </div>
+        
+      </div>
 
       </div>
+
+
     </div>
+
 </body>
 
 </html>

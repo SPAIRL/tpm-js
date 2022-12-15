@@ -17,8 +17,9 @@
 /* Play nice with navbar-fixed-top */
 
 body {
-  padding-top: 70px;
+  padding-top: 65px;
 }
+
 
 .navbar-header {
   float: left;
@@ -31,24 +32,33 @@ body {
   float: none;
 }
 
+
+
 /* Sidebar navigation */
 
 .nav-sidebar {
   margin-right: -21px;
   /* 20px padding + 1px border */
   margin-bottom: 20px;
-  margin-left: -20px;
+  padding-top: 5px;
+  z-index: 1000;
+  position: fixed;
+  left: 0;
+  height: 100%;
+  overflow-y: auto;
+  background: #37474F;
 }
 
 .nav-sidebar>li>a {
   padding-right: 20px;
   padding-left: 20px;
+ 
 }
 
 .nav-sidebar>.active>a,
 .nav-sidebar>.active>a:hover,
 .nav-sidebar>.active>a:focus {
-  color: #fff;
+  color: #FFF;
   background-color: #428bca;
 }
 
