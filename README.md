@@ -16,6 +16,10 @@ Keys codelab: ![Keys codelab](docs/screenshot_keys.png)
 
 PCRs codelab: ![PCRs codelab](docs/screenshot_pcrs.png)
 
+## Dependencies for Windows
+*   Docker
+*   Python3
+
 ## Architecture
 
 TPM2-JS includes the following libraries:
