@@ -1,4 +1,7 @@
 <h2>Introduction</h2>
+
+<p>TPMs are remarkable! They are passive, low-end devices that offer <b>strong security guarantees.</b></p>
+
 <p>TPM is a discrete device soldered on the motherboard. It is a cheap (costs less
   than a dollar to manufacture), <b>low-end device</b> that communicates with the
   main CPU over a <b>slow, low-bandwidth</b> channel.
@@ -17,28 +20,4 @@
   TPM command execution is single-threaded: it executes <b>one command at a time</b>.
   Commands cannot be queued or batched together - each command must wait for the
   currently running command to finish. Note that command execution can be canceled.
-</p>
-<hr>
-<p>
-  Despite these unfavorable conditions, the TPM is designed to support critical security
-  workflows. TPMs support two main use-cases: <i>secure key generation</i> and
-  <i>remote system attestation</i>.
-</p>
-<h3>Secure Key Generation</h3>
-<p>
-  TPM is a cryptographic device. It can securely generate new cryptographic keys:
-  the keys are only available to the TPM - private key material <b>never leaves</b>  the device in plain form.
-  <br>TPM can do crypto operations such as encryption and signing. TPM can certify
-  new keys, so in a way a TPM acts as a certificate authority (CA). Trust in these
-  keys is rooted in a primary key provisioned by the manufacturer or the owner
-  of the TPM.
-</p>
-
-<h3>Remote System Attestation</h3>
-<p>
-  TPM can capture the host system state: this is done by storing a sequence of measurements
-  in a special set of registers called Platform Configuration Registers (PCRs).
-  The TPM can later report its PCR values to a remote party. It is done in a secure
-  way such that the remote attester can verify the report is fresh, genuine, and
-  has not been tampered with.
 </p>

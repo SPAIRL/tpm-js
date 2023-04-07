@@ -7,14 +7,18 @@ previous lesson on authorization.
 
 <h3>Session Authorization</h3>
 <p>
-A session is an internal TPM object that encodes an authorization value.
-Until now we've been implicitly using the <code>TPM2_RS_PW</code> session handle to
-authorize commands with either an empty or a user defined password.
+  A session is an object of TPM. It is normally used to hold a digest, or a small, 
+  fixed value of data derived from user defined PCR values. This happens in two 
+  steps known as Sealing and Unsealing:
 </p>
 
 <h4>Trial Session</h4>
 <p>
-  More generic/deep overview of trial sessions (This one is difficult to understand)
+  First, a trial session is generated to be fed expected PCR values. These PCR values 
+  are stored as a digest within the session object. This sealing portion provides an 
+  authorization policy we can add to an object. It will require that access to the 
+  object is only provided once the expected environment is met, which feeds onto the 
+  second half of the process
 </p>
 <p>
 Calculating the authPolicy digest using a trial session is summarized in the following diagram:
@@ -31,7 +35,12 @@ Calculating the authPolicy digest using a trial session is summarized in the fol
 
 <h4>Policy Session</h4>
 <p>
-  Session info here (Again, this is some difficult stuff, gonna need deep detail)
+  Unsealing is where we determine that we have a safe, expected environment, the security 
+  guarantee provided by TPM. To accomplish this, we create a new session called the policy 
+  session. This will read the PCR values to generate a digest, and if the PCR values are the 
+  what is expected, then we should generate the same digest as the trial session. If the 
+  digest matches, also known as matching session policies, then we can safely give access to
+  the sealed data.
 </p>
 
 <p>
@@ -49,28 +58,4 @@ Policy session with bad (unexpected) PCR values:
 <p>
   <img src="images/policy_session_bad.svg" class="img-responsive center-block" style="max-width:90%"
     alt="Trial Session">
-</p>
-
-<h3>Sealing Keys</h3>
-<p>
-  Previously we saw how keys protect PCR reports, now we'll see how PCRs protect
-  keys. The two main functionalities provided by the TPM complement each other:
-</p>
-
-<p>
-  <img src="images/complement_2.svg" class="img-responsive center-block" style="max-width:70%"
-    alt="Seal Operation">
-</p>
-
-<p>
-  Key sealing info here
-</p>
-
-<h3>Protecting Keys With A Sealed Password</h3>
-<p>
-  A common practice is to protect keys with a randomly generated password, then seal that
-  password data blob to PCR values. This scheme has the advantage of having an easy, password less
-  access to the key when the host is in a good know state. Additionally, by storing the password
-  offline, the user has a recovery solution: access to the key is always granted when the password
-  is entered manually.
 </p>
