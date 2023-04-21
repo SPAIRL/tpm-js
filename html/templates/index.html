@@ -78,7 +78,18 @@
     <ul class="nav navbar-nav navbar-right">
         <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#simulatorCollapse" aria-expanded="true" aria-controls="simulatorCollapse"><span class="glyphicon glyphicon-log-in"></span> Launch/Hide Simulator</button>
     </ul>
+    <ul class="nav navbar-nav navbar-left">
+      <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#sidebarCollapse" aria-expanded="true" aria-controls="sidebarCollapse"><span></span> Show/Hide Sidebar</button>
+    </ul>
     </div>
+      <!-- Simulator window -->
+      <div class="col-md-12">
+        <!-- affix sets position to fixed. width 40% is the column width (5) divided by the
+          total number of row columns (12) --> 
+        <div class="simulator_window panel-collapse collapse in" style="width: 100%; background-color: white;" id="simulatorCollapse" >    
+        {% include "simulator_window.html" %}
+        </div>
+      </div>
   </div>
 </nav>
  <div class="container-fluid">
@@ -107,7 +118,7 @@
 
        <!-- Sidebar -->
       <div class="col-md-1 sidebar">
-        <ul class="nav nav-sidebar" style="background-color: #2D2D2A;">
+        <ul class="nav nav-sidebar" style="background-color: #2D2D2A;" id="sidebarCollapse">
           {% for fname, title, id in pages %}
           <li id="side_{{id}}" {% if loop.first %} class="active" {% endif %}>
             <a href="#{{id}}" data-value="{{id}}" style="color: #F4F4F6;">{{ title|e }}</a>
@@ -118,7 +129,7 @@
 
 
       <!-- Page -->
-      <div class="col-md-6">
+      <div class="col-md-8">
         {% for fname, title, id in pages %}
         <div id={{ id }}
              class="page"
@@ -129,7 +140,7 @@
               {% if not loop.first %}
               <li><a href="#{{ pages[loop.index0-1][2] }}" data-value="{{ pages[loop.index0-1][2] }}">Previous</a></li>
               {% endif %} {% if not loop.last %}
-              <li><a href="#{{ pages[loop.index0+1][2] }}" data-value="{{ pages[loop.index0+1][2] }}" type="button" data-toggle="collapse" data-target="#simulatorCollapse" aria-expanded="true" aria-controls="simulatorCollapse">Next</a></li>
+              <li><a href="#{{ pages[loop.index0+1][2] }}" data-value="{{ pages[loop.index0+1][2] }}" type="button">Next</a></li>
               {% endif %}
             </ul>
           </nav>
@@ -138,19 +149,7 @@
       </div>
 
 
-      <!-- Simulator window -->
-      <div class="col-md-5">
-        <!-- affix sets position to fixed. width 40% is the column width (5) divided by the
-             total number of row columns (12) -->
-        
-        <div class="simulator_window affix panel-collapse collapse in" style="width: 40%" id="simulatorCollapse" >
-            
-        
-          {% include "simulator_window.html" %}
-        
-      </div>
 
-      </div>
 
 
     </div>
