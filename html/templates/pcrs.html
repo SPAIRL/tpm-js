@@ -1,20 +1,12 @@
 <h2>PCRs</h2>
 
 <p>
-  Platform Configuration Registers (PCRs) are a set of fixed-sized registers in
-  the TPM. Unlike regular registers, PCR values cannot be set to arbitrary values.
-  The only operation they support (besides Read), is <b>Extend</b>.
-
-  <br>Thanks to extend cryptographic properties, PCR values cannot be forged. For
-  this reason, PCRs are used to efficiently <b>capture</b> the host <b>system state</b>: a
-  digest of a sequence of measurements is securely stored in the TPM's PCRs.
+  Platform Configuration Registers (PCRs) are one of the most important features of the TPM. They are a collection of registers that can store a digest of measurements of the system's configuration. The measurements are usually taken at specific points during the boot process or after critical system events. These measurements can include BIOS version, firmware, boot loader, and kernel version, among others. By storing these measurements in PCRs, the TPM can provide an immutable record of the system's state.
 </p>
 
 <h3>Extend Semantics</h3>
 <p>
-  PCRs start with an initial, well known value, usually zero. Extend takes as input
-  a digest <var>M</var>, and computes the hash of the current PCR value, concatenated
-  with the input value. The result is stored in the PCR. This is called a <b>folding-hash</b>.
+  The PCR starts with an initial value, usually zero, and is updated by performing an "extend" operation. The extend operation takes a digest of the current PCR value, concatenated with the input measurement, and computes a hash of the concatenation. The resulting hash is then stored in the PCR. This process is called a folding-hash, and it ensures that any change in the sequence of measurements, including a single bit flip or a change in the order of the measurements, results in a completely different PCR value.
 
   <br>
   <div class="panel panel-default">
@@ -37,27 +29,13 @@
 <!--Go into more details about quotes-->
 <h3>Reading PCR Values</h3>
 <p>
-  <div class="alert alert-warning" role="alert">There's one TPM command you should definitely <b>not</b> use: <code>TPM2_CC_PCR_Read</code>.
-    <br>The reason: it returns PCR values, but with no security guarantees. An attacker
-    can MITM your communication with the TPM, and forge arbitrary TPM2_CC_PCR_Read
-    responses.
-  </div>
+  To read the PCR values, we use a signed statement from the TPM called a quote. The quote is signed by a trusted key, usually the AIK. The quote contains information about any number of PCRs, including a digest of the PCR values and the PCR index of those values. By verifying the signature, we can trust that the PCR values have not been tampered with and that they accurately reflect the system's configuration.
 
-  <br> The correct way to read PCR values is through quotes. A quote is a signed statement from the TPM, attesting to its internal state. 
-  We are going to use the AIK, our trusted signing key, to sign the PCR quote.
-
-  <br> This shows how the first TPM functionality - performing secure crypto operations -
-  complements its second functionality - reporting host system state.
+  The combination of PCRs and quotes allows the TPM to perform system measurements that can be used in a variety of use-cases, with two most common being secure boot and remote attestation. The use of PCRs and quotes is a fundamental aspect of the TPM's security architecture and is essential for ensuring the trustworthiness of the system.
+  
 </p>
 
 <p>
   <img src="images/complement_1.svg" class="img-responsive center-block" style="max-width:70%"
     alt="Quote Operation">
-</p>
-
-<p>
-  <div class="alert alert-info" role="alert"><code>TPM2_CC_Quote</code> also takes a nonce as input. It's important to use
-    a random nonce for each quote operation. This ensures the quote reports fresh
-    PCR values, and protects against replay attacks.
-  </div>
 </p>

@@ -1,23 +1,10 @@
 <h2>Introduction</h2>
+<p>Trusted Platform Module (TPM) is a specialized, low-cost hardware chip that is soldered onto the motherboard of modern computers. TPM plays a crucial role in securing the system by providing two main cryptographic functions: key generation and secure storage. With these two main functions, TPM can be implemented in many different security use-cases such as attestation, sealing, authorization, and many more that you will learn throughout this tutorial.</p>
 
-<p>TPMs are remarkable! They are passive, low-end devices that offer <b>strong security guarantees.</b></p>
+<p>One of the key features of TPM is its ability to perform cryptographic operations, such as encryption, decryption, and digital signatures, using its built-in hardware random number generator and secure key storage. This makes it an essential component in securing the system against various types of attacks, such as unauthorized access, data tampering, and others.</p>
 
-<p>TPM is a discrete device soldered on the motherboard. It is a cheap (costs less
-  than a dollar to manufacture), <b>low-end device</b> that communicates with the
-  main CPU over a <b>slow, low-bandwidth</b> channel.
-</p>
-<p>
-  TPM is a <b>passive</b> device: it doesn't monitor the system and it can't halt
-  CPU execution. For it to work, it must be fed data.
-</p>
-<p>
-  TPM has <b>limited storage</b> for runtime state and persistent data: its non-volatile
-  storage is about 64KB in size. TPM can only hold a limited number of objects
-  at the same time. For this reason, a dedicated software layer on the host (resource
-  manager) loads and unloads session objects at runtime.
-</p>
-<p>
-  TPM command execution is single-threaded: it executes <b>one command at a time</b>.
-  Commands cannot be queued or batched together - each command must wait for the
-  currently running command to finish. Note that command execution can be canceled.
-</p>
+<p>However, TPM's capabilities are limited by its design. It is a passive device that cannot monitor the system or halt CPU execution. To function, it must be fed with data by the host operating system or other software components. Moreover, TPM has limited storage capacity for runtime state and persistent data, with non-volatile storage of around 64KB in size. It can hold only a limited number of objects at the same time, requiring a dedicated software layer on the host, called a resource manager, to load and unload session objects at runtime.</p>
+
+<p>Despite its limitations, TPM provides an essential security feature for modern computers. It is widely used in various industries, including government, finance, healthcare, any place computers can be used, TPM can secure it.</p>
+
+<p>Overall, TPM is a crucial component in securing modern computer systems. Its capabilities and limitations are important to understand for anyone interested in cybersecurity, and it is a critical tool for organizations looking to protect their systems and data from various types of attacks.</p>

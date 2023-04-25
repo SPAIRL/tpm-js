@@ -1,19 +1,10 @@
 <h2>Ownership, SRK and AIK</h2>
 
 <p>
-  The EK protects keys on the endorsement hierarchy. It is trusted thanks to its
-  certificate. Keys on the owner hierarchy, however, cannot be trusted because
-  they're not protected by the EK.
-  <br>It is the owner's responsibility to provision and certify the primary encryption
-  key on the owner hierarchy (here, "owner" refers to the end-user of the TPM -
-  us).
+  In the previous sections, we talked about the key hierarchies of the TPM and how they differ in terms of their seed and certification. However, certificates mentioned previously only pertain to the endorsement hierarchy, the owner hierarchy (the main tree for the owners, also known as the end-user, which is us) do not fall under the endorsement key, and therefore must be provisioned by the owner.
+When we take ownership of a TPM, we reset the owner hierarchy and create our own set of keys. One of the most important keys on the owner hierarchy is the Storage Root Key (SRK), which is a primary, restricted (meaning it can not be used for any other purpose) encryption key derived from the owner seed. The SRK is used to protect keys on the owner hierarchy and is trusted because it's certified by the owner during the provisioning process. This is an important step in establishing a root of trust for the keys generated on the owner hierarchy.
+The SRK alone is not enough to establish trust in the owner hierarchy. To ensure that keys generated on the owner hierarchy can be trusted, we create and certify a restricted signing key during provisioning time. This trusted signing key is also called an Attestation Identity Key (AIK).
+The AIK is used to sign data structures called TPM quotes, which will be expanded upon later, but essentially is how data is securely read from the TPM.
+To summarize, having a trusted encryption and signing key on the owner hierarchy is critical for establishing a root of trust for the keys generated on that hierarchy. The SRK is a primary, restricted encryption key that's used to protect keys on the owner hierarchy, while the AIK is a restricted signing key that's used to sign data encrypted by the SRK. Together, these keys help establish a chain of trust that's necessary for ensuring the security of the system.
 
-  <br> The Storage Rook Key (SRK), is a primary, <b>restricted encryption key</b>  on the owner hierarchy, derived from the oseed. The SRK protects keys on the
-  owner hierarchy. It is trusted because the owner certified the key while when
-  ownership.
-
-  <br> As we'll see later, having a trusted, <b>restricted signing key</b> is useful
-  for remote system attestation. It's, therefore, recommended to create and certify
-  a restricted signing key during provisioning time. This trusted signing key is
-  also called Attestation Identity Key (AIK).
 </p>

@@ -1,21 +1,13 @@
 <h2>Measured Boot And Remote Attestation</h2>
 
 <p>
-  In the <a class="self" href="#pg_pcrs">previous</a> section we saw how PCRs efficiently
-  record a sequence of measurements. We also saw how to securely read PCR values
-  from the TPM. The last piece of the puzzle is how to get <b>meaningful measurements</b>  into the TPM.
-  <br> The solution is a standardized technology supported by modern firmwares
-  and operating systems called "measured boot".
+  In the previous section, we learned about PCRs and how they efficiently record a sequence of measurements. Now, we will focus on how to get meaningful measurements into the TPM. This is done through a standardized technology called "measured boot", which is supported by modern firmwares and operating systems.
 </p>
 
 <h3>Measured Boot</h3>
 
 <p>
-  In measured boot each element in the boot process measures its successor's code
-  and data regions before handing off execution to that element. Measured boot
-  proves the <b>integrity state</b> of the host platform: a compromised OS will
-  be detected because a malicious boot element (bootkit / rootkit) is measured
-  before it has a chance to modify the system.
+  Measured boot is a process where each element in the boot process measures its successor's code and data regions before handing off execution to that element. This ensures the integrity state of the host platform, as a compromised operating system will be detected because a malicious boot element (bootkit/rootkit) is measured before it has a chance to modify the system.
 </p>
 
 <p>
@@ -29,42 +21,19 @@
 </p>
 
 <p>
-  Measured boot as depicted above raises the following questions:
-  <ol>
-    <li>Who measures the firmware? Or generally, how do we trust the firmware?</li>
-    <li>TPM concisely records the host state: it stores a folding hash of all measurements.
-      How do we interpret it? How do we know what was measured?</li>
-  </ol>
+The first question that arises when implementing measured boot is who measures the firmware, and how do we trust it? The answer to this is that the firmware measures itself into PCR0. Firmware vendors are expected to publish their "good known" measurements for firmware blobs they distribute, which can be used to verify a good firmware was loaded. Alternatively, an immutable code component called Core Root of Trust for Measurement (CRTM) can be used. It is the first piece of code that executes on the main processor during the boot process and measures the firmware blob before passing execution to it.
 
-  <br>There are two general answers to the first question. The first, you trust
-  the firmware. The firmware measures it self into PCR0. Firmware vendors are expected
-  to publish their "good know" measurements for firmware blobs they distribute.
-  Using these, one can verify a good firmware was loaded. The second answer involves
-  an <b>immutable</b> code component called Core Root of Trust for Measurement
-  (CRTM). It is the first piece of code that executes on the main processor during
-  the boot process. It measures the firmware blob before passing executing to it.
 </p>
 
 <p>
-  <br>The answer to the second question is PCR numbers and the boot event log.
-  Remember that we have a (limited) number of PCRs at our disposal. Instead of
-  measuring everything to a single PCR, measured boot measures different things
-  to different PCRs. For instance, the firmware is measured into PCR0. The disk
-  layout is measured into PCR5 and the boot loader is measured into PCR4. This
-  provides a crude way to figure out what component of the system changed during
-  boot. The second way to interpret PCR values is via the boot event log, which
-  we'll discuss next.
-
+  The second question that arises is how we interpret the TPM's concise recording of host state, which is stored as a folding hash of all measurements. This is done through PCR numbers and the boot event log. Since we have a limited number of PCRs at our disposal, different things are measured to different PCRs. For instance, the firmware is measured into PCR0, the disk layout is measured into PCR5, and the bootloader is measured into PCR4. This provides a crude way to figure out what component of the system changed during boot.
 </p>
 
 
 <h3>Event Log</h3>
 
 <p>
-  The boot event log provides <b>context</b> for measurements. The log details
-  each measurement sent to the TPM. It's maintained by the firmware, bootloader
-  and later the OS. Users can query the OS for its boot event log, and read what
-  components were measured during boot.
+  The boot event log provides context for measurements, and details each measurement sent to the TPM. It is maintained by the firmware, bootloader, and later the operating system. Users can query the operating system for its boot event log and read what components were measured during boot. A simplified event log might list the firmware blob, bootloader, and kernel image, along with the PCR and digest values for each.
 </p>
 
 <p>
@@ -86,18 +55,15 @@
 
 <h3>Remote Attestation Protocol</h3>
 <p>
-  Remote attestation (RA) protocol combines all that we've learned: it lets a remote
-  party query the integrity state of a target host, without assuming any trust
-  on that host.
-  <br> In RA, the remote attester reads the boot event log and a fresh PCR quote.
-  It validates the event log's integrity by comparing the actual PCR values to
-  the expected ones from the log. It then evaluates the integrity state of the
-  host: do we trust this particular firmware that was loaded? This particular boot
-  loader and OS kernel? It can also set a policy around these measurements, and
-  enforce, for instance, that an up-to-date kernel is running.
+  Remote attestation (RA) is a protocol that enables a remote party to verify the integrity of a target host's software and firmware, without requiring any prior trust relationship between the two parties.
 
-  <br> A compromised host will be detected. An attacker can deny access to the
-  TPM or to the boot event log, but this denial of service will result in an untrusted host.
+The RA protocol works by having the target host send a signed statement called a PCR quote, which contains the current state of the host's Platform Configuration Registers (PCRs). These PCRs contain the hash of all the measurements taken during the boot process, including the firmware, bootloader, and kernel, which are all measured into different PCRs.
+
+The remote party also requests a copy of the host's boot event log, which contains the sequence of measurements taken during the boot process. The remote party can then compare the expected PCR values from the event log to the actual PCR values contained in the PCR quote. If they match, then the remote party can trust that the host's boot process has not been compromised.
+
+The RA protocol can be used to enforce security policies, such as ensuring that only trusted firmware and software is running on the host, or that the host is running the latest version of a particular software component.
+
+An attacker who attempts to compromise the host by modifying the boot process or tampering with the boot event log will be detected by the remote attester, resulting in an untrusted host. However, it is important to note that an attacker can still deny access to the TPM or to the boot event log, resulting in a denial of service attack, which can prevent the RA protocol from being executed, but this denial will result in an untrusted host.
 </p>
 
 <p>

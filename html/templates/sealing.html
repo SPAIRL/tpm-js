@@ -6,19 +6,12 @@ we need to create a session authorization.
 
 <h3>Session Authorization</h3>
 <p>
-  A session is an object of TPM. It is normally used to hold a digest, or a small, 
-  fixed value of data derived from user defined PCR values. This happens in two 
-  steps known as Sealing and Unsealin 
+  In TPM, sealing refers to the process of encrypting sensitive data, such as passwords or keys, and tying it to the current state of the system. This means that the sealed data can only be decrypted and accessed if certain conditions are met, such as the system being in a particular state or the correct authorization token being presented.
 </p>
 
 <h4>Trial Session</h4>
 <p>
-  First, a trial session is generated to be fed expected PCR values. These PCR values 
-  are stored as a digest within the session object. This sealing portion provides an 
-  authorization policy we can add to an object. It will require that access to the 
-  object is only provided once the expected environment is met, which feeds onto the 
-  second half of the process
-</p>
+  To create a seal, a trial session is first generated. This session is used to compute a digest, which is a small, fixed value of data derived from a set of user-defined PCR values. The PCR values represent the state of the system, such as the firmware version or the state of the boot loader. The digest is stored in the trial session object and serves as the authorization policy that must be met in order to access the sealed data.</p>
 <p>
 Calculating the authPolicy digest using a trial session is summarized in the following diagram:
 </p>
@@ -34,12 +27,9 @@ Calculating the authPolicy digest using a trial session is summarized in the fol
 
 <h4>Policy Session</h4>
 <p>
-  Unsealing is where we determine that we have a safe, expected environment, the security 
-  guarantee provided by TPM. To accomplish this, we create a new session called the policy 
-  session. This will read the PCR values to generate a digest, and if the PCR values are the 
-  what is expected, then we should generate the same digest as the trial session. If the 
-  digest matches, also known as matching session policies, then we can safely give access to
-  the sealed data.
+  Once the trial session has been created and the digest computed, we move on to the policy session. The policy session is used to read the current state of the PCR values and compute a digest. If the PCR values match the expected values from the trial session, then the digest computed in the policy session will match the digest in the trial session, indicating that the system is in the expected state.
+  If the digests match, then the policy session can be used to access the sealed data. If the digests do not match, then access to the sealed data is denied. This ensures that the sensitive data can only be accessed when the system is in the expected state, providing a high level of security.
+  In summary, sealing involves tying sensitive data to the current state of the system using a trial session and an authorization policy based on a digest. The policy session is then used to determine if the system is in the expected state and grant access to the sealed data if the conditions are met.
 </p>
 
 <p>

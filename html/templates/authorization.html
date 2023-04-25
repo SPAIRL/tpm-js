@@ -1,11 +1,9 @@
 <h2>Authorization</h2>
 <p>
-  Communication with the TPM device is done over Memory Mapped IO (MMIO): a region
-  of physical memory is reserved for sending and receiving data from the TPM. This
-  means that any (privileged) code on the host can interact with the TPM. To protect
-  against unwanted use, the TPM lets users and administrators set authorization
-  policies. With this policy in place, only users with the right authorization
-  token can use TPM entities like keys and NV indices.
-  <br>The TPM supports many authorization schemes. In this lesson we'll work with
-  simple password authorization scheme.
+  Authorization in TPM is a critical component in ensuring the security of TPM operations. It involves setting policies and permissions for TPM entities like keys and NV indices, and only allowing authorized users to access and use these entities.
+  To begin with, a user or administrator must first define the authorization policy for a particular TPM entity. This policy can include a number of different parameters, such as the type of entity being accessed, the specific operation being performed, and the identity of the user or application attempting to access the entity. The policy can also specify the conditions under which authorization should be granted or denied, such as a certain time period or a particular hardware or software configuration.
+  Once the authorization policy has been set, the TPM will enforce it whenever the entity is accessed. The user or application attempting to access the entity will need to provide the appropriate authorization token or credential, which can be a password, a biometric scan, or a cryptographic key. This token is then used to validate the user's identity and grant access to the entity if the policy requirements are met.
+  The TPM supports a number of different authorization schemes, each with its own strengths and weaknesses. For example, password-based authorization is simple and widely used, but it can be vulnerable to brute-force attacks or dictionary attacks if the password is weak. Biometric-based authorization, on the other hand, is more secure but can be more complex to implement and may require additional hardware.
+  Overall, the goal of TPM authorization is to ensure that only authorized users or applications can access and use TPM entities, and that access is granted based on predefined policies and conditions. By enforcing strong authorization policies, the TPM helps to protect against unauthorized access and ensure the security of TPM operations.
+  In the next section we will go into further detail of how these authorization policies can be used to secure data.  
 </p>
